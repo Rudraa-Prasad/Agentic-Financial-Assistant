@@ -1,0 +1,6 @@
+langchain>=0.1.16
+langgraph>=0.0.37
+neo4j>=5.16.0
+tqdm
+python-dotenv
+requests
