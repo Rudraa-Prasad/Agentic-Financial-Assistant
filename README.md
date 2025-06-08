@@ -1,22 +1,28 @@
-🧠 Agents in the Workflow
-agent_summ – Review summarization and improvement suggestions
+. Customer Loan Request (Entry Point)
+Required Inputs:
 
-general_agent – General Neo4j query response generator
+Customer ID or Personal Details
+Loan Amount Requested
+Loan Purpose (home, car, personal, business)
+Loan Tenure (months/years)
+Employment Details
+Income Information
+Existing Loan Details (if any)
 
-loan_agent – Loan approval decision and reasoning agent
+{
+  "credit_score": 750,
+  "income_verified": true,
+  "debt_to_income_ratio": 0.35,
+  "repayment_history": "excellent",
+  "recommendation": "approve",
+  "max_loan_amount": 500000
+}
 
-mail_agent – Email drafting and sending agent for marketing or alerts
 
-🔧 Tools in the Workflow
-cypher_query_generator – Converts natural language queries to Cypher queries
-
-neo4j_retriever – Executes Cypher queries and retrieves data from the Neo4j database
-
-review_reflector – Cleans, validates, and possibly retries review summarization
-
-loan_approval_api_tool – Calls external loan approval API
-
-mail_intent_classifier – Classifies email type (e.g., min balance alert vs. product advertisement)
-
-send_mail – Sends the crafted email to customers retrieved from the database
-
+Fraud Detection Agent (A5) ⭐ Most Industry Relevant
+A5 - Fraud Detection Router
+* Routes to A6 (Real-time Fraud) or A7 (Historical Analysis)
+* A6 - Real-time Fraud Monitor: Checks current transactions against fraud patterns
+* A7 - Historical Fraud Analyzer: Analyzes past transaction patterns for suspicious accounts
+* A8 - Fraud Action Handler: Blocks cards, sends alerts, creates fraud reports, notifies customers
+no code for now. what input i need, keep simple as it is poc only.

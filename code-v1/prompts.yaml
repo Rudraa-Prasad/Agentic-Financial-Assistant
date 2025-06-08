@@ -1,0 +1,269 @@
+# Prompts Configuration for Financial Assistant
+
+cypher_generation:
+  template: |
+    You are a Neo4j Cypher query generator for a banking database. 
+    Given the database schema and user question, generate a precise Cypher query.
+    
+    Database Schema:
+    {schema}
+    
+    User Question: {question}
+    
+    Important Guidelines:
+    - Only return the Cypher query, no explanations
+    - Use proper Cypher syntax
+    - Consider relationships between nodes
+    - Handle date formats appropriately
+    - Use LIMIT when appropriate to avoid large result sets
+    
+    Cypher Query:
+
+review_analysis:
+  template: |
+    You are a banking customer service analyst. Analyze the following customer reviews and provide actionable insights.
+    
+    Customer Reviews:
+    {reviews}
+    
+    Please provide a comprehensive analysis including:
+    
+    1. **Overall Sentiment Summary**
+       - Positive, negative, neutral breakdown
+       - Overall satisfaction score (1-10)
+    
+    2. **Key Issues Identified**
+       - Most common complaints
+       - Service areas needing attention
+       - Branch-specific issues if any
+    
+    3. **Specific Recommendations**
+       - Immediate actions needed
+       - Process improvements
+       - Staff training requirements
+    
+    4. **Priority Actions**
+       - Critical issues requiring urgent attention
+       - Medium-term improvements
+       - Long-term strategic changes
+    
+    Format your response professionally for bank management review.
+
+loan_report:
+  template: |
+    You are a loan officer creating a comprehensive loan assessment report.
+    
+    Customer Data: {customer_data}
+    Loan Decision: {loan_decision}
+    
+    Generate a detailed loan report including:
+    
+    1. **Decision Summary**
+       - Final decision (Approved/Rejected/Conditional)
+       - Loan amount and terms (if approved)
+    
+    2. **Key Factors Analyzed**
+       - Credit history assessment
+       - Income verification
+       - Account balance and transaction history
+       - Employment stability
+    
+    3. **Risk Assessment**
+       - Risk level (Low/Medium/High)
+       - Risk factors identified
+       - Mitigation strategies
+    
+    4. **Recommendations**
+       - For approved loans: monitoring requirements
+       - For rejected loans: steps for future approval
+       - Additional documentation needed
+    
+    5. **Next Steps**
+       - Customer communication requirements
+       - Documentation to be completed
+       - Follow-up actions needed
+    
+    Format this as a professional banking document.
+
+general_query:
+  template: |
+    You are a banking data analyst. Based on the user's question and database results, provide a clear and informative response.
+    
+    User Question: {question}
+    Database Results: {results}
+    
+    Please:
+    1. Summarize the key findings
+    2. Provide relevant insights
+    3. Highlight any important trends or patterns
+    4. Format numbers appropriately (currency, percentages, etc.)
+    5. Make recommendations if applicable
+    
+    Keep the response professional and easy to understand for bank staff.
+
+email_templates:
+  min_balance:
+    subject: "Important Notice: Low Account Balance Alert"
+    template: |
+      Dear {customer_name},
+      
+      We hope this message finds you well. We're writing to inform you that your account balance has fallen below ₹5,000.
+      
+      Current Balance: ₹{balance}
+      Date: {date}
+      
+      To ensure uninterrupted banking services, we recommend:
+      • Depositing funds to maintain adequate balance
+      • Setting up balance alerts for future notifications
+      • Considering our automatic savings plans
+      
+      If you need assistance or have questions about your account, please don't hesitate to contact us at:
+      • Phone: 1800-111-109
+      • Email: customer.care@sbi.co.in
+      • Visit your nearest branch
+      
+      Thank you for banking with us.
+      
+      Best regards,
+      State Bank of India
+      Customer Service Team
+
+  product_advertisement:
+    subject: "New Banking Product: {product_name} - Exclusively for You!"
+    template: |
+      Dear Valued Customer,
+      
+      We're excited to introduce our latest banking solution designed specifically for customers like you.
+      
+      🌟 {product_name} 🌟
+      
+      Product Highlights:
+      {product_features}
+      
+      Key Benefits for You:
+      • {benefit_1}
+      • {benefit_2}
+      • {benefit_3}
+      
+      Special Launch Offer:
+      {special_offer}
+      
+      How to Apply:
+      • Visit our website: www.sbi.co.in
+      • Call us at: 1800-111-109
+      • Visit your nearest SBI branch
+      • Use SBI YONO app
+      
+      This offer is valid until {validity_date}. Don't miss out!
+      
+      For more information, reply to this email or contact your relationship manager.
+      
+      Thank you for choosing SBI as your trusted banking partner.
+      
+      Warm regards,
+      State Bank of India
+      Digital Banking Team
+
+  threat_alert:
+    subject: "🚨 Security Alert: Protect Yourself from {threat_name}"
+    template: |
+      Dear Valued Customer,
+      
+      Your security is our top priority. We want to alert you about a growing threat: {threat_name}
+      
+      ⚠️ WHAT IS {threat_name}?
+      {threat_description}
+      
+      🔍 HOW TO IDENTIFY:
+      {identification_signs}
+      
+      🛡️ HOW TO PROTECT YOURSELF:
+      {prevention_measures}
+      
+      🚫 REMEMBER - SBI WILL NEVER:
+      • Ask for your PIN, password, or OTP over phone/email
+      • Request money transfers to "verify" your account
+      • Threaten arrest or legal action over phone
+      • Ask you to download remote access apps
+      
+      ✅ IF YOU RECEIVE SUSPICIOUS CALLS:
+      • Hang up immediately
+      • Do not share any personal information
+      • Report to SBI Customer Care: 1800-111-109
+      • Report to Cyber Crime: 1930
+      
+      🔒 ADDITIONAL SECURITY TIPS:
+      • Enable SMS/email alerts for all transactions
+      • Regularly monitor your account statements
+      • Use only official SBI channels for banking
+      • Keep your contact details updated with the bank
+      
+      We are committed to keeping your money and information safe. Stay vigilant and report any suspicious activity immediately.
+      
+      For any queries or to report fraud, contact us 24/7:
+      • Customer Care: 1800-111-109
+      • Email: complaint@sbi.co.in
+      • SBI Secure App: Report through the app
+      
+      Stay Safe, Stay Secure.
+      
+      Best regards,
+      State Bank of India
+      Cyber Security Team
+
+  general_notification:
+    subject: "{notification_subject}"
+    template: |
+      Dear {customer_name},
+      
+      {notification_body}
+      
+      {additional_details}
+      
+      For any assistance, please contact us:
+      • Customer Care: 1800-111-109
+      • Email: customer.care@sbi.co.in
+      • Website: www.sbi.co.in
+      
+      Thank you for banking with State Bank of India.
+      
+      Best regards,
+      SBI Customer Service Team
+
+routing_prompts:
+  agent_classification: |
+    Analyze the following user query and determine which agent should handle it:
+    
+    Query: "{user_input}"
+    
+    Available Agents:
+    1. review_agent - For analyzing customer reviews, feedback, complaints, and satisfaction surveys
+    2. general_agent - For general database queries, account information, transaction history, customer data
+    3. loan_agent - For loan applications, credit decisions, loan eligibility, approval/rejection
+    4. mail_agent - For sending emails, notifications, alerts, marketing campaigns
+    
+    Respond with only the agent name (review_agent, general_agent, loan_agent, or mail_agent).
+
+error_handling:
+  database_error: |
+    I apologize, but I encountered an issue while accessing the database. This could be due to:
+    - Temporary connectivity issues
+    - Invalid query parameters
+    - Database maintenance
+    
+    Please try again in a few moments or contact technical support if the issue persists.
+    
+  api_error: |
+    I'm sorry, but I couldn't connect to the external service at this time. This might be due to:
+    - Service temporarily unavailable
+    - Network connectivity issues
+    - Service maintenance
+    
+    Please try again later or contact support for assistance.
+    
+  general_error: |
+    I apologize for the inconvenience. An unexpected error occurred while processing your request.
+    
+    Please try rephrasing your question or contact our support team for assistance.
+    
+    Error details have been logged for our technical team to review.
