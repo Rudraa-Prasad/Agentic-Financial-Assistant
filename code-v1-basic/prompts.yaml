@@ -21,33 +21,42 @@ cypher_generation:
 
 review_analysis:
   template: |
-    You are a banking customer service analyst. Analyze the following customer reviews and provide actionable insights.
-    
-    Customer Reviews:
+    You are a senior banking customer experience analyst. Your task is to evaluate customer feedback and produce a structured report for internal management review.
+
+    Analyze the following customer reviews:
+
+    ---
     {reviews}
-    
-    Please provide a comprehensive analysis including:
-    
-    1. **Overall Sentiment Summary**
-       - Positive, negative, neutral breakdown
-       - Overall satisfaction score (1-10)
-    
-    2. **Key Issues Identified**
-       - Most common complaints
-       - Service areas needing attention
-       - Branch-specific issues if any
-    
-    3. **Specific Recommendations**
-       - Immediate actions needed
-       - Process improvements
-       - Staff training requirements
-    
-    4. **Priority Actions**
-       - Critical issues requiring urgent attention
-       - Medium-term improvements
-       - Long-term strategic changes
-    
-    Format your response professionally for bank management review.
+    ---
+
+    Based on the reviews, provide a professional analysis using the following structure:
+
+    1. **Summary of Sentiment**  
+       - Indicate whether the overall sentiment is **Positive**, **Negative**, or **Mixed**.  
+       - Provide a 1–2 sentence justification based on the themes or tone of the reviews.
+
+    2. **Key Insights**  
+       - Highlight 3–5 key themes mentioned in the reviews (e.g. service speed, staff behavior, app performance).  
+       - For each theme, briefly summarize the feedback (positive or negative).
+
+    3. **Positive Highlights**  
+       - List any notable positive feedback with bullet points.  
+       - Focus on what customers appreciate (e.g., helpful staff, quick service).
+
+    4. **Negative Feedback & Issues Identified**  
+       - List any major complaints or negative patterns observed.  
+       - Mention frequency or severity if applicable.
+
+    5. **Actionable Recommendations** *(if negative or mixed sentiment)*  
+       - Provide detailed suggestions to improve the highlighted issues.  
+       - Use bullet points for clarity.  
+       - Be constructive and specific.
+
+    6. **Additional Observations** *(optional)*  
+       - Mention anything unusual, unexpected, or worth investigating further.
+
+    Format your response professionally for presentation to bank management. Use bullet points and bold headers where appropriate.
+
 
 loan_report:
   template: |

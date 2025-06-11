@@ -4,6 +4,7 @@ import os
 import smtplib
 import yaml
 import requests
+import random
 from typing import Dict, List, Optional, TypedDict
 from email.mime.text import MIMEText
 
@@ -12,7 +13,7 @@ from langchain.tools import Tool
 from langchain.agents import initialize_agent, AgentType
 from langchain_groq import ChatGroq
 from langchain.prompts import PromptTemplate
-from langchain_neo4j import Neo4jGraph
+
 from langchain_community.tools import DuckDuckGoSearchRun
 
 
@@ -20,14 +21,14 @@ from langgraph.graph import StateGraph, END
 
 from dotenv import load_dotenv
 
+from neo4j_connection import graph
+from review_chain import reviews_vector_chain
+
+
 load_dotenv()
 
 # --- Configuration ---
-NEO4J_CONFIG = {
-    "url": os.getenv("NEO4J_URI"),
-    "username": os.getenv("NEO4J_USERNAME"), 
-    "password": os.getenv("NEO4J_PASSWORD")
-}
+
 
 EMAIL_CONFIG = {
     "sender_email": os.getenv("SENDER_EMAIL"),
@@ -39,7 +40,7 @@ EMAIL_CONFIG = {
 LOAN_API_URL = "http://localhost:8000/loan-decision"
 
 # Initialize components
-graph = Neo4jGraph(**NEO4J_CONFIG)
+
 llm = ChatGroq(
     model_name="llama3-8b-8192",
     api_key=os.getenv("GROQ_API_KEY"),
@@ -72,6 +73,7 @@ def load_prompts(yaml_file_path: str = "prompts.yaml"):
 prompts_dict = load_prompts()
 
 # --- Tools Implementation ---
+
 
 def cypher_generation_tool(question: str) -> Dict:
     """Generate and execute Cypher query based on user question"""
@@ -150,6 +152,19 @@ def send_mail_tool(recipient_email: str, subject: str, body: str) -> Dict:
 # --- Create LangChain Tools ---
 tools = [
     Tool(
+        name="BankReviews",
+        func=reviews_vector_chain.invoke,
+        description="""Useful when you need to answer questions
+        about customer experiences, opinions, or any other qualitative
+        aspects related to banks, employees, or services using semantic
+        search. Not suitable for answering objective questions that involve
+        transactions, account balances, employee data, counts, percentages,
+        or structured facts. Use the entire prompt as input to the tool.
+        For example, if the prompt is "Do customers find the staff helpful?",
+        the input should be "Do customers find the staff helpful?".
+        """
+    ),
+    Tool(
         name="cypher_generation",
         description="Generate and execute Cypher queries for Neo4j database",
         func=lambda q: cypher_generation_tool(q)
@@ -175,19 +190,20 @@ tools = [
 
 def create_review_agent():
     """Review Summarization Agent"""
-    review_tools = [tools[0]]  # cypher_generation
+    review_tools = [tools[0]]  # review_generation
     return initialize_agent(
         tools=review_tools,
         llm=llm,
         agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
         verbose=True,
         handle_parsing_errors=True,
-        max_iterations=3
+        max_iterations=15,  # 🔼 Increase this
+        max_execution_time=60  # ⏱ Optional timeout in seconds
     )
 
 def create_general_agent():
     """General Database Query Agent"""
-    general_tools = [tools[0]]  # cypher_generation
+    general_tools = [tools[1]]  # cypher_generation
     return initialize_agent(
         tools=general_tools,
         llm=llm,
@@ -199,7 +215,7 @@ def create_general_agent():
 
 def create_loan_agent():
     """Loan Decision Agent"""
-    loan_tools = [tools[0], tools[2]]  # cypher_generation, loan_api
+    loan_tools = [tools[1], tools[3]]  # cypher_generation, loan_api
     return initialize_agent(
         tools=loan_tools,
         llm=llm,
@@ -211,7 +227,7 @@ def create_loan_agent():
 
 def create_mail_agent():
     """Mail Generation and Sending Agent"""
-    mail_tools = [tools[0], tools[1], tools[3]]  # cypher_generation, web_search, send_email
+    mail_tools = [tools[1], tools[2], tools[4]]  # cypher_generation, web_search, send_email
     return initialize_agent(
         tools=mail_tools,
         llm=llm,
@@ -221,9 +237,13 @@ def create_mail_agent():
         max_iterations=3
     )
 
+
+# initializing all agents
+review_agent = create_review_agent()
+
 # --- Workflow Nodes ---
 
-def router_node(state: AgentState) -> AgentState:
+async def router_node(state: AgentState) -> AgentState:
     """Route user query to appropriate agent"""
     user_input = state["user_input"].lower()
     
@@ -240,30 +260,55 @@ def router_node(state: AgentState) -> AgentState:
     
     return {**state, "agent_choice": agent_choice}
 
-def review_agent_node(state: AgentState) -> AgentState:
-    """Handle review summarization requests"""
-    try:
-        # Get reviews from database
-        cypher_result = cypher_generation_tool("MATCH (r:Review) RETURN r.review as review, r.date_submitted as date")
+# def review_agent_node(state: AgentState) -> AgentState:
+#     """Handle review summarization requests"""
+#     try:
+#         # Get reviews from database
+#         cypher_result = cypher_generation_tool("MATCH (r:Review) RETURN r.review as review, r.date_submitted as date")
         
-        if cypher_result["success"]:
-            reviews = cypher_result["result"]
+#         if cypher_result["success"]:
+#             reviews = cypher_result["result"]
+#             reviews = random.sample(reviews, k=30)
+
+#             # Analyze reviews using LLM
+#             review_text = "\n".join([f"Date: {r['date']}, Review: {r['review']}" for r in reviews])
+#             analysis_prompt = prompts_dict["review_analysis"]["template"].format(reviews=review_text)
             
-            # Analyze reviews using LLM
-            review_text = "\n".join([f"Date: {r['date']}, Review: {r['review']}" for r in reviews])
-            analysis_prompt = prompts_dict["review_analysis"]["template"].format(reviews=review_text)
+#             response = llm.invoke(analysis_prompt)
+#             final_response = response.content
+#         else:
+#             final_response = f"Error retrieving reviews: {cypher_result['error']}"
             
-            response = llm.invoke(analysis_prompt)
-            final_response = response.content
-        else:
-            final_response = f"Error retrieving reviews: {cypher_result['error']}"
-            
-    except Exception as e:
-        final_response = f"Review analysis failed: {str(e)}"
+#     except Exception as e:
+#         final_response = f"Review analysis failed: {str(e)}"
     
+#     return {**state, "final_response": final_response}
+
+
+
+# async def review_agent_node(state: AgentState) -> AgentState:
+#     """Handle review summarization requests"""
+#     user_input = state["user_input"].lower()  # or however your state is structured
+#     result = await review_agent.ainvoke(user_input)
+#     final_response = result
+#     return {**state, "final_response": final_response}
+
+import asyncio
+
+async def review_agent_node(state: AgentState) -> AgentState:
+    """Handle review summarization requests"""
+
+    user_input = state["user_input"].lower()
+
+    # Wrap sync `invoke()` in async call
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, review_agent.invoke, user_input)
+    final_response = result.get("output", str(result))  # Safely extract output
     return {**state, "final_response": final_response}
 
-def fraud_detection_router_node(state: AgentState) -> AgentState:
+
+
+async def fraud_detection_router_node(state: AgentState) -> AgentState:
     """A5 - Route fraud queries to real-time or historical analysis"""
     user_input = state["user_input"].lower()
     
@@ -275,7 +320,7 @@ def fraud_detection_router_node(state: AgentState) -> AgentState:
     
     return {**state, "fraud_sub_agent": fraud_sub_agent}
 
-def calculate_fraud_risk(transaction_data: Dict) -> int:
+async def calculate_fraud_risk(transaction_data: Dict) -> int:
     """Simple fraud risk calculation (1-10 scale)"""
     risk_score = 1
     
@@ -298,7 +343,7 @@ def calculate_fraud_risk(transaction_data: Dict) -> int:
     
     return min(risk_score, 10)
 
-def realtime_fraud_monitor_node(state: AgentState) -> AgentState:
+async def realtime_fraud_monitor_node(state: AgentState) -> AgentState:
     """A6 - Real-time fraud monitoring"""
     try:
         # Get recent transactions for analysis
@@ -334,7 +379,7 @@ def realtime_fraud_monitor_node(state: AgentState) -> AgentState:
     
     return {**state, "fraud_risk_score": fraud_risk_score, "final_response": final_response}
 
-def historical_fraud_analyzer_node(state: AgentState) -> AgentState:
+async def historical_fraud_analyzer_node(state: AgentState) -> AgentState:
     """A7 - Historical fraud pattern analysis"""
     try:
         # Analyze historical transaction patterns
@@ -371,7 +416,7 @@ def historical_fraud_analyzer_node(state: AgentState) -> AgentState:
     
     return {**state, "fraud_risk_score": fraud_risk_score, "final_response": final_response}
 
-def fraud_action_handler_node(state: AgentState) -> AgentState:
+async def fraud_action_handler_node(state: AgentState) -> AgentState:
     """A8 - Take appropriate fraud actions based on risk score"""
     try:
         risk_score = state.get("fraud_risk_score", 1)
@@ -399,7 +444,7 @@ Next Steps: Please contact customer care immediately at 1800-111-109
 
 This is an automated security measure. We apologize for any inconvenience.
 
-SBI Security Team
+Bank Security Team
             """
             
             # For PoC - just log the email action
@@ -428,7 +473,7 @@ SBI Security Team
     
     return {**state, "fraud_actions": actions_taken, "final_response": final_response}
 
-def general_agent_node(state: AgentState) -> AgentState:
+async def general_agent_node(state: AgentState) -> AgentState:
     """Handle general database queries"""
     try:
         result = cypher_generation_tool(state["user_input"])
@@ -450,7 +495,7 @@ def general_agent_node(state: AgentState) -> AgentState:
     
     return {**state, "final_response": final_response}
 
-def loan_agent_node(state: AgentState) -> AgentState:
+async def loan_agent_node(state: AgentState) -> AgentState:
     """Handle loan decision requests"""
     try:
         # Extract loan request data from database
@@ -478,7 +523,7 @@ def loan_agent_node(state: AgentState) -> AgentState:
     
     return {**state, "final_response": final_response}
 
-def mail_agent_node(state: AgentState) -> AgentState:
+async def mail_agent_node(state: AgentState) -> AgentState:
     """Handle mail generation and sending"""
     try:
         user_input = state["user_input"].lower()
@@ -552,7 +597,7 @@ def mail_agent_node(state: AgentState) -> AgentState:
     return {**state, "final_response": final_response}
 
 # --- Create Workflow ---
-def create_financial_assistant_workflow():
+async def create_financial_assistant_workflow():
     """Create the main workflow using LangGraph"""
     
     workflow = StateGraph(AgentState)
@@ -625,10 +670,10 @@ def create_financial_assistant_workflow():
     return graph
 
 # --- Main Execution ---
-def run_financial_assistant(user_query: str) -> str:
+async def run_financial_assistant(user_query: str) -> str:
     """Run the financial assistant with user query"""
     
-    workflow = create_financial_assistant_workflow()
+    workflow = await create_financial_assistant_workflow()
     
     initial_state = AgentState(
         user_input=user_query,
@@ -645,7 +690,7 @@ def run_financial_assistant(user_query: str) -> str:
     )
     
     try:
-        result = workflow.invoke(initial_state)
+        result = await workflow.ainvoke(initial_state)
         return result.get("final_response", "No response generated")
     except Exception as e:
         return f"Workflow execution failed: {str(e)}"

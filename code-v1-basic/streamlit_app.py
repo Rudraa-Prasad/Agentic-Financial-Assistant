@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 import time
 import json
 from typing import Dict, List
-
+import asyncio
 try:
-    from main_2 import run_financial_assistant
+    from main import run_financial_assistant
     AGENT_AVAILABLE = True
 except ImportError:
     AGENT_AVAILABLE = False
@@ -21,6 +21,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+
 
 # Custom CSS for better styling
 st.markdown("""
@@ -223,12 +225,21 @@ if 'quick_query' in st.session_state:
     del st.session_state.quick_query
 
 # Text input with example queries
+# user_input = st.text_area(
+#     "",
+#     value=default_query,
+#     height=100,
+#     placeholder="Type your question here..."
+# )
+
 user_input = st.text_area(
-    "",
+    "Your input",  # Non-empty label (required)
     value=default_query,
     height=100,
-    placeholder="Type your question here..."
+    placeholder="Type your question here...",
+    label_visibility="collapsed"  # Hides the label visually
 )
+
 
 col1, col2, col3 = st.columns([1, 1, 4])
 
@@ -249,7 +260,7 @@ if send_button and user_input.strip() and AGENT_AVAILABLE:
     with st.spinner("🤖 Agent processing your request..."):
         try:
             # Call your agent
-            response = run_financial_assistant(user_input)
+            response =  asyncio.run(run_financial_assistant(user_input))
             
             # Update statistics based on query type
             st.session_state.agent_stats['total_queries'] += 1
