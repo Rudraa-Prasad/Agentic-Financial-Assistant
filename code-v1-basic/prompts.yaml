@@ -119,7 +119,7 @@ email_templates:
       
       If you need assistance or have questions about your account, please don't hesitate to contact us at:
       • Phone: 1800-111-109
-      • Email: customer.care@Our.co.in
+      • Email: customer.care@sbi.co.in
       • Visit your nearest branch
       
       Thank you for banking with us.
@@ -149,16 +149,16 @@ email_templates:
       {special_offer}
       
       How to Apply:
-      • Visit our website: www.Our.co.in
+      • Visit our website: www.sbi.co.in
       • Call us at: 1800-111-109
-      • Visit your nearest Our branch
-      • Use Our YONO app
+      • Visit your nearest SBI branch
+      • Use SBI YONO app
       
       This offer is valid until {validity_date}. Don't miss out!
       
       For more information, reply to this email or contact your relationship manager.
       
-      Thank you for choosing Our as your trusted banking partner.
+      Thank you for choosing SBI as your trusted banking partner.
       
       Warm regards,
       State Bank of India
@@ -180,7 +180,7 @@ email_templates:
       🛡️ HOW TO PROTECT YOURSELF:
       {prevention_measures}
       
-      🚫 REMEMBER - Our WILL NEVER:
+      🚫 REMEMBER - SBI WILL NEVER:
       • Ask for your PIN, password, or OTP over phone/email
       • Request money transfers to "verify" your account
       • Threaten arrest or legal action over phone
@@ -189,21 +189,21 @@ email_templates:
       ✅ IF YOU RECEIVE SUSPICIOUS CALLS:
       • Hang up immediately
       • Do not share any personal information
-      • Report to Our Customer Care: 1800-111-109
+      • Report to SBI Customer Care: 1800-111-109
       • Report to Cyber Crime: 1930
       
       🔒 ADDITIONAL SECURITY TIPS:
       • Enable SMS/email alerts for all transactions
       • Regularly monitor your account statements
-      • Use only official Our channels for banking
+      • Use only official SBI channels for banking
       • Keep your contact details updated with the bank
       
       We are committed to keeping your money and information safe. Stay vigilant and report any suspicious activity immediately.
       
       For any queries or to report fraud, contact us 24/7:
       • Customer Care: 1800-111-109
-      • Email: complaint@Our.co.in
-      • Our Secure App: Report through the app
+      • Email: complaint@sbi.co.in
+      • SBI Secure App: Report through the app
       
       Stay Safe, Stay Secure.
       
@@ -222,13 +222,13 @@ email_templates:
       
       For any assistance, please contact us:
       • Customer Care: 1800-111-109
-      • Email: customer.care@Our.co.in
-      • Website: www.Our.co.in
+      • Email: customer.care@sbi.co.in
+      • Website: www.sbi.co.in
       
       Thank you for banking with State Bank of India.
       
       Best regards,
-      Our Customer Service Team
+      SBI Customer Service Team
 
 routing_prompts:
   agent_classification: |

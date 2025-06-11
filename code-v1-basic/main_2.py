@@ -1,13 +1,12 @@
-# Agentic Financial Assistant - Complete Implementation
+# Agentic Financial Assistant 
 import os
-import yaml
+
 import smtplib
 import requests
-from typing import Dict, List, Optional, TypedDict, Annotated
+from typing import Dict, List, Optional, TypedDict
 from email.mime.text import MIMEText
-from datetime import datetime
 
-# LangChain imports
+# imports
 from langchain.tools import Tool
 from langchain.agents import initialize_agent, AgentType
 from langchain_groq import ChatGroq
@@ -15,12 +14,11 @@ from langchain.prompts import PromptTemplate
 from langchain_neo4j import Neo4jGraph
 from langchain_community.tools import DuckDuckGoSearchRun
 
-# LangGraph imports
+
 from langgraph.graph import StateGraph, END
 
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 # --- Configuration ---
@@ -117,7 +115,7 @@ def load_prompts(yaml_file_path: str = "prompts.yaml"):
             - Contact us for assistance
             
             Best regards,
-            Bank Team
+            SBI Team
             """,
             "product_ad": """
             Subject: Exciting New Banking Product - {product_name}
@@ -133,7 +131,7 @@ def load_prompts(yaml_file_path: str = "prompts.yaml"):
             Contact us to learn more!
             
             Best regards,
-            Bank Team
+            SBI Team
             """,
             "threat_alert": """
             Subject: Security Alert: Protect Yourself from {threat_name}
@@ -151,7 +149,7 @@ def load_prompts(yaml_file_path: str = "prompts.yaml"):
             Remember: We will never ask for your personal details over phone/email.
             
             Stay safe,
-            Bank Security Team
+            SBI Security Team
             """
         }
     }
@@ -197,6 +195,7 @@ def loan_api_tool(customer_data: Dict) -> Dict:
     """Call external loan API for decision"""
     try:
         response = requests.post(LOAN_API_URL, json=customer_data, timeout=10)
+        print(response)
         return response.json()
     except Exception as e:
         return {"decision": "rejected", "reason": f"API call failed: {str(e)}"}
@@ -486,7 +485,7 @@ Next Steps: Please contact customer care immediately at 1800-111-109
 
 This is an automated security measure. We apologize for any inconvenience.
 
-Bank Security Team
+SBI Security Team
             """
             
             # For PoC - just log the email action
