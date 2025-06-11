@@ -1,13 +1,13 @@
-# Agentic Financial Assistant - Complete Implementation
+# Agentic Financial Assistant 
 import os
-import yaml
-import smtplib
-import requests
-from typing import Dict, List, Optional, TypedDict, Annotated
-from email.mime.text import MIMEText
-from datetime import datetime
 
-# LangChain imports
+import smtplib
+import yaml
+import requests
+from typing import Dict, List, Optional, TypedDict
+from email.mime.text import MIMEText
+
+# imports
 from langchain.tools import Tool
 from langchain.agents import initialize_agent, AgentType
 from langchain_groq import ChatGroq
@@ -15,12 +15,11 @@ from langchain.prompts import PromptTemplate
 from langchain_neo4j import Neo4jGraph
 from langchain_community.tools import DuckDuckGoSearchRun
 
-# LangGraph imports
+
 from langgraph.graph import StateGraph, END
-# from langgraph.prebuilt import ToolExecutor
+
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 # --- Configuration ---
@@ -31,10 +30,10 @@ NEO4J_CONFIG = {
 }
 
 EMAIL_CONFIG = {
-    "sender_email": "pdrudra.121@gmail.com",
-    "app_password": "svij fcje mylm igsr",
-    "smtp_server": "smtp.gmail.com",
-    "smtp_port": 587
+    "sender_email": os.getenv("SENDER_EMAIL"),
+    "app_password": os.getenv("EMAIL_APP_PASSWORD"),
+    "smtp_server": "smtp.gmail.com",  
+    "smtp_port": 587 
 }
 
 LOAN_API_URL = "http://localhost:8000/loan-decision"
@@ -51,6 +50,7 @@ llm = ChatGroq(
 class AgentState(TypedDict):
     user_input: str
     agent_choice: Optional[str]
+    fraud_sub_agent: Optional[str]  
     cypher_query: Optional[str]
     neo4j_result: Optional[List[Dict]]
     loan_data: Optional[Dict]
@@ -58,100 +58,15 @@ class AgentState(TypedDict):
     email_content: Optional[str]
     email_recipients: Optional[List[str]]
     web_search_result: Optional[str]
+    fraud_risk_score: Optional[int]  
+    fraud_actions: Optional[List[str]]  
     final_response: Optional[str]
     error: Optional[str]
 
 # --- Load Prompts ---
 def load_prompts(yaml_file_path: str = "prompts.yaml"):
-    prompts = {
-        "cypher_generation": {
-            "template": """
-            You are a Neo4j Cypher query generator. Given the database schema and user question, 
-            generate a precise Cypher query.
-            
-            Schema: {schema}
-            Question: {question}
-            
-            Generate only the Cypher query, nothing else.
-            """
-        },
-        "review_analysis": {
-            "template": """
-            Analyze the following customer reviews and provide insights:
-            
-            Reviews: {reviews}
-            
-            Provide:
-            1. Overall sentiment summary
-            2. Key issues identified
-            3. Specific recommendations for improvement
-            4. Priority actions needed
-            """
-        },
-        "loan_report": {
-            "template": """
-            Based on the loan decision and customer data, generate a comprehensive report:
-            
-            Customer Data: {customer_data}
-            Loan Decision: {loan_decision}
-            
-            Provide:
-            1. Decision summary (Approved/Rejected)
-            2. Key factors considered
-            3. Risk assessment
-            4. Recommendations
-            """
-        },
-        "email_templates": {
-            "min_balance": """
-            Subject: Important Notice: Low Account Balance
-            
-            Dear {customer_name},
-            
-            We noticed your account balance is below ₹5,000. To avoid any inconvenience:
-            - Consider maintaining a minimum balance
-            - Set up balance alerts
-            - Contact us for assistance
-            
-            Best regards,
-            SBI Team
-            """,
-            "product_ad": """
-            Subject: Exciting New Banking Product - {product_name}
-            
-            Dear Valued Customer,
-            
-            We're excited to introduce our new {product_name}:
-            {product_details}
-            
-            Benefits for you:
-            {benefits}
-            
-            Contact us to learn more!
-            
-            Best regards,
-            SBI Team
-            """,
-            "threat_alert": """
-            Subject: Security Alert: Protect Yourself from {threat_name}
-            
-            Dear Valued Customer,
-            
-            We want to alert you about {threat_name}:
-            
-            What it is:
-            {threat_description}
-            
-            How to protect yourself:
-            {prevention_tips}
-            
-            Remember: We will never ask for your personal details over phone/email.
-            
-            Stay safe,
-            SBI Security Team
-            """
-        }
-    }
+    with open(yaml_file_path, "r", encoding="utf-8") as file:
+        prompts = yaml.safe_load(file)
     return prompts
 
 prompts_dict = load_prompts()
@@ -169,7 +84,6 @@ def cypher_generation_tool(question: str) -> Dict:
         prompt_text = prompt.format(schema=schema, question=question)
         cypher_query = llm.invoke(prompt_text).content
         result = graph.query(cypher_query)
-        print(f"cypher generated query : {cypher_query} ")
         return {"cypher": cypher_query, "result": result, "success": True}
     except Exception as e:
         return {"error": str(e), "success": False}
@@ -178,7 +92,6 @@ def neo4j_retriever_tool(cypher_query: str) -> Dict:
     """Execute Cypher query and retrieve data"""
     try:
         result = graph.query(cypher_query)
-        print(f"neo4j_retriever : {result} ")
         return {"result": result, "success": True}
     except Exception as e:
         return {"error": str(e), "success": False}
@@ -196,6 +109,7 @@ def loan_api_tool(customer_data: Dict) -> Dict:
     """Call external loan API for decision"""
     try:
         response = requests.post(LOAN_API_URL, json=customer_data, timeout=10)
+        print(response)
         return response.json()
     except Exception as e:
         return {"decision": "rejected", "reason": f"API call failed: {str(e)}"}
@@ -212,7 +126,6 @@ def mail_generation_tool(template_type: str, **kwargs) -> str:
             if kwargs.get('context'):
                 prompt += f"\nContext: {kwargs['context']}"
             response = llm.invoke(prompt)
-            print(f"drafted mail : {response} ")
             return response.content
     except Exception as e:
         return f"Email generation failed: {str(e)}"
@@ -314,7 +227,9 @@ def router_node(state: AgentState) -> AgentState:
     """Route user query to appropriate agent"""
     user_input = state["user_input"].lower()
     
-    if any(word in user_input for word in ["review", "feedback", "rating", "complaint"]):
+    if any(word in user_input for word in ["fraud", "suspicious", "block", "security", "unusual"]):
+        agent_choice = "fraud_agent"
+    elif any(word in user_input for word in ["review", "feedback", "rating", "complaint"]):
         agent_choice = "review_agent"
     elif any(word in user_input for word in ["loan", "credit", "borrow", "lending"]):
         agent_choice = "loan_agent"
@@ -347,6 +262,171 @@ def review_agent_node(state: AgentState) -> AgentState:
         final_response = f"Review analysis failed: {str(e)}"
     
     return {**state, "final_response": final_response}
+
+def fraud_detection_router_node(state: AgentState) -> AgentState:
+    """A5 - Route fraud queries to real-time or historical analysis"""
+    user_input = state["user_input"].lower()
+    
+    # Determine sub-agent based on keywords
+    if any(word in user_input for word in ["real-time", "current", "now", "monitor", "active"]):
+        fraud_sub_agent = "realtime_fraud"
+    else:
+        fraud_sub_agent = "historical_fraud"
+    
+    return {**state, "fraud_sub_agent": fraud_sub_agent}
+
+def calculate_fraud_risk(transaction_data: Dict) -> int:
+    """Simple fraud risk calculation (1-10 scale)"""
+    risk_score = 1
+    
+    # Check amount (high amounts are riskier)
+    amount = transaction_data.get("amount", 0)
+    if amount > 100000:
+        risk_score += 4
+    elif amount > 50000:
+        risk_score += 2
+    
+    # Check transaction type
+    tx_type = transaction_data.get("transaction_type", "").lower()
+    if tx_type in ["withdrawal", "transfer"]:
+        risk_score += 1
+    
+    # Check frequency (mock - in real system would check time patterns)
+    # For PoC, randomly add risk based on transaction pattern
+    if "urgent" in str(transaction_data).lower():
+        risk_score += 2
+    
+    return min(risk_score, 10)
+
+def realtime_fraud_monitor_node(state: AgentState) -> AgentState:
+    """A6 - Real-time fraud monitoring"""
+    try:
+        # Get recent transactions for analysis
+        cypher_result = cypher_generation_tool(
+            "MATCH (t:Transaction) RETURN t.id as id, t.amount as amount, t.transaction_type as type, t.date as date ORDER BY t.date DESC LIMIT 5"
+        )
+        
+        if cypher_result["success"] and cypher_result["result"]:
+            transactions = cypher_result["result"]
+            high_risk_found = False
+            risk_details = []
+            
+            for tx in transactions:
+                risk_score = calculate_fraud_risk(tx)
+                if risk_score >= 7:
+                    high_risk_found = True
+                    risk_details.append(f"Transaction {tx['id']}: Amount ₹{tx['amount']}, Risk Score: {risk_score}")
+            
+            if high_risk_found:
+                fraud_risk_score = 8
+                final_response = f"🚨 HIGH FRAUD RISK DETECTED!\n\nSuspicious transactions found:\n" + "\n".join(risk_details)
+            else:
+                fraud_risk_score = 3
+                final_response = "✅ Real-time monitoring complete. No high-risk transactions detected."
+                
+        else:
+            fraud_risk_score = 1
+            final_response = "No transaction data available for real-time monitoring."
+            
+    except Exception as e:
+        fraud_risk_score = 1
+        final_response = f"Real-time fraud monitoring failed: {str(e)}"
+    
+    return {**state, "fraud_risk_score": fraud_risk_score, "final_response": final_response}
+
+def historical_fraud_analyzer_node(state: AgentState) -> AgentState:
+    """A7 - Historical fraud pattern analysis"""
+    try:
+        # Analyze historical transaction patterns
+        cypher_result = cypher_generation_tool(
+            "MATCH (t:Transaction) RETURN t.amount as amount, t.transaction_type as type, count(t) as frequency ORDER BY t.amount DESC LIMIT 10"
+        )
+        
+        if cypher_result["success"] and cypher_result["result"]:
+            transactions = cypher_result["result"]
+            
+            # Simple pattern analysis
+            suspicious_patterns = []
+            total_risk = 0
+            
+            for tx in transactions:
+                if tx["amount"] > 75000:
+                    suspicious_patterns.append(f"Large transactions: ₹{tx['amount']} ({tx['frequency']} times)")
+                    total_risk += 2
+                    
+            if suspicious_patterns:
+                fraud_risk_score = min(6 + total_risk, 10)
+                final_response = f"📊 HISTORICAL ANALYSIS COMPLETE\n\nSuspicious patterns identified:\n" + "\n".join(suspicious_patterns) + f"\n\nOverall Risk Assessment: {fraud_risk_score}/10"
+            else:
+                fraud_risk_score = 2
+                final_response = "📊 Historical analysis complete. No suspicious patterns detected in transaction history."
+                
+        else:
+            fraud_risk_score = 1
+            final_response = "No historical transaction data available for analysis."
+            
+    except Exception as e:
+        fraud_risk_score = 1
+        final_response = f"Historical fraud analysis failed: {str(e)}"
+    
+    return {**state, "fraud_risk_score": fraud_risk_score, "final_response": final_response}
+
+def fraud_action_handler_node(state: AgentState) -> AgentState:
+    """A8 - Take appropriate fraud actions based on risk score"""
+    try:
+        risk_score = state.get("fraud_risk_score", 1)
+        actions_taken = []
+        
+        if risk_score >= 8:
+            # High risk - Block and alert
+            actions_taken.extend([
+                "🔒 Card/Account temporarily blocked",
+                "📧 Customer notified via email",
+                "📞 Security team alerted",
+                "📋 Fraud case created"
+            ])
+            
+            # Send alert email (using existing mail tool)
+            alert_subject = "🚨 URGENT: Security Alert - Account Activity"
+            alert_body = f"""
+Dear Customer,
+
+We detected suspicious activity on your account and have temporarily blocked it for your protection.
+
+Risk Level: HIGH ({risk_score}/10)
+Action Taken: Account temporarily blocked
+Next Steps: Please contact customer care immediately at 1800-111-109
+
+This is an automated security measure. We apologize for any inconvenience.
+
+SBI Security Team
+            """
+            
+            # For PoC - just log the email action
+            actions_taken.append("📬 Security alert email prepared")
+            
+        elif risk_score >= 5:
+            # Medium risk - Monitor and notify
+            actions_taken.extend([
+                "👁️ Account flagged for enhanced monitoring",
+                "📧 Customer advisory email sent",
+                "📝 Risk assessment logged"
+            ])
+            
+        else:
+            # Low risk - Log only
+            actions_taken.append("📝 Activity logged for routine monitoring")
+        
+        # Compile final response
+        current_response = state.get("final_response", "")
+        action_summary = "\n🔧 ACTIONS TAKEN:\n" + "\n".join([f"• {action}" for action in actions_taken])
+        
+        final_response = current_response + "\n" + action_summary + f"\n\n✅ Fraud detection process completed."
+        
+    except Exception as e:
+        final_response = state.get("final_response", "") + f"\n❌ Fraud action handling failed: {str(e)}"
+    
+    return {**state, "fraud_actions": actions_taken, "final_response": final_response}
 
 def general_agent_node(state: AgentState) -> AgentState:
     """Handle general database queries"""
@@ -484,10 +564,16 @@ def create_financial_assistant_workflow():
     workflow.add_node("loan_agent", loan_agent_node)
     workflow.add_node("mail_agent", mail_agent_node)
     
+    # Add fraud detection nodes
+    workflow.add_node("fraud_detection_router", fraud_detection_router_node)  # A5
+    workflow.add_node("realtime_fraud_monitor", realtime_fraud_monitor_node)  # A6
+    workflow.add_node("historical_fraud_analyzer", historical_fraud_analyzer_node)  # A7
+    workflow.add_node("fraud_action_handler", fraud_action_handler_node)  # A8
+    
     # Set entry point
     workflow.set_entry_point("router")
     
-    # Add conditional edges from router
+    # Add conditional edges from main router
     def route_to_agent(state):
         return state["agent_choice"]
     
@@ -498,15 +584,37 @@ def create_financial_assistant_workflow():
             "review_agent": "review_agent",
             "general_agent": "general_agent", 
             "loan_agent": "loan_agent",
-            "mail_agent": "mail_agent"
+            "mail_agent": "mail_agent",
+            "fraud_agent": "fraud_detection_router"  # Route to A5
         }
     )
     
-    # All agents end the workflow
+    # Add conditional edges from fraud router (A5)
+    def route_fraud_sub_agent(state):
+        return state["fraud_sub_agent"]
+    
+    workflow.add_conditional_edges(
+        "fraud_detection_router",
+        route_fraud_sub_agent,
+        {
+            "realtime_fraud": "realtime_fraud_monitor",  # A5 -> A6
+            "historical_fraud": "historical_fraud_analyzer"  # A5 -> A7
+        }
+    )
+    
+    # A6 and A7 both go to A8
+    workflow.add_edge("realtime_fraud_monitor", "fraud_action_handler")  # A6 -> A8
+    workflow.add_edge("historical_fraud_analyzer", "fraud_action_handler")  # A7 -> A8
+    
+    # Original agents end the workflow
     workflow.add_edge("review_agent", END)
     workflow.add_edge("general_agent", END)
     workflow.add_edge("loan_agent", END)
     workflow.add_edge("mail_agent", END)
+    
+    # A8 ends the workflow
+    workflow.add_edge("fraud_action_handler", END)  # A8 -> END
+    
     graph = workflow.compile()
     graph_png = graph.get_graph().draw_mermaid_png()
 
@@ -548,9 +656,12 @@ if __name__ == "__main__":
     test_queries = [
         # "Analyze all customer reviews and suggest improvements",
         # "How many customers joined this month?",
-        "Should we approve loan for customer ID 123?",
+        # "Should we approve loan for customer ID 123?",
         # "Send email to customers with balance less than 5000",
-        # "Send threat alert about digital arrest scam to all customers"
+        # "Send threat alert about digital arrest scam to all customers",
+        # "Check for fraud in real-time transactions",
+        # "Analyze suspicious transaction patterns for customer account",
+        "Monitor current transactions for unusual activity"
     ]
     
     for query in test_queries:

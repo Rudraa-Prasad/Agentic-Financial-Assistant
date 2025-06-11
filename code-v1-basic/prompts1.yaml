@@ -119,13 +119,13 @@ email_templates:
       
       If you need assistance or have questions about your account, please don't hesitate to contact us at:
       • Phone: 1800-111-109
-      • Email: customer.care@Bank.co.in
+      • Email: customer.care@sbi.co.in
       • Visit your nearest branch
       
       Thank you for banking with us.
       
       Best regards,
-      TopBank of India
+      State Bank of India
       Customer Service Team
 
   product_advertisement:
@@ -149,19 +149,19 @@ email_templates:
       {special_offer}
       
       How to Apply:
-      • Visit our website: www.Bank.co.in
+      • Visit our website: www.sbi.co.in
       • Call us at: 1800-111-109
-      • Visit your nearest Bank branch
-      • Use Bank YONO app
+      • Visit your nearest SBI branch
+      • Use SBI YONO app
       
       This offer is valid until {validity_date}. Don't miss out!
       
       For more information, reply to this email or contact your relationship manager.
       
-      Thank you for choosing Bank as your trusted banking partner.
+      Thank you for choosing SBI as your trusted banking partner.
       
       Warm regards,
-      Top Bank of India
+      State Bank of India
       Digital Banking Team
 
   threat_alert:
@@ -171,44 +171,44 @@ email_templates:
       
       Your security is our top priority. We want to alert you about a growing threat: {threat_name}
       
-       WHAT IS {threat_name}?
+      ⚠️ WHAT IS {threat_name}?
       {threat_description}
       
-       HOW TO IDENTIFY:
+      🔍 HOW TO IDENTIFY:
       {identification_signs}
       
-       HOW TO PROTECT YOURSELF:
+      🛡️ HOW TO PROTECT YOURSELF:
       {prevention_measures}
       
-       REMEMBER - Bank WILL NEVER:
+      🚫 REMEMBER - SBI WILL NEVER:
       • Ask for your PIN, password, or OTP over phone/email
       • Request money transfers to "verify" your account
       • Threaten arrest or legal action over phone
       • Ask you to download remote access apps
       
-       IF YOU RECEIVE SUSPICIOUS CALLS:
+      ✅ IF YOU RECEIVE SUSPICIOUS CALLS:
       • Hang up immediately
       • Do not share any personal information
-      • Report to Bank Customer Care: 1800-111-109
+      • Report to SBI Customer Care: 1800-111-109
       • Report to Cyber Crime: 1930
       
-       ADDITIONAL SECURITY TIPS:
+      🔒 ADDITIONAL SECURITY TIPS:
       • Enable SMS/email alerts for all transactions
       • Regularly monitor your account statements
-      • Use only official Bank channels for banking
+      • Use only official SBI channels for banking
       • Keep your contact details updated with the bank
       
       We are committed to keeping your money and information safe. Stay vigilant and report any suspicious activity immediately.
       
       For any queries or to report fraud, contact us 24/7:
       • Customer Care: 1800-111-109
-      • Email: complaint@Bank.co.in
-      • Bank Secure App: Report through the app
+      • Email: complaint@sbi.co.in
+      • SBI Secure App: Report through the app
       
       Stay Safe, Stay Secure.
       
       Best regards,
-      TopBank of India
+      State Bank of India
       Cyber Security Team
 
   general_notification:
@@ -222,13 +222,13 @@ email_templates:
       
       For any assistance, please contact us:
       • Customer Care: 1800-111-109
-      • Email: customer.care@Bank.co.in
-      • Website: www.Bank.co.in
+      • Email: customer.care@sbi.co.in
+      • Website: www.sbi.co.in
       
-      Thank you for banking with TopBank of India.
+      Thank you for banking with State Bank of India.
       
       Best regards,
-      Bank Customer Service Team
+      SBI Customer Service Team
 
 routing_prompts:
   agent_classification: |
